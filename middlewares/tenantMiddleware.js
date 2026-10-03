@@ -69,6 +69,13 @@ function extractSubdomain(req) {
     return null;
   }
 
+  // On Vercel, deployment hostnames such as <project>-<hash>.vercel.app are not
+  // tenant subdomains; they are platform/backend hosts. Ignore them unless they
+  // are explicitly configured as a real tenant domain.
+  if (PLATFORM_DOMAIN === "vercel.app" && host.endsWith(".vercel.app")) {
+    return null;
+  }
+
   const platformParts = PLATFORM_DOMAIN.split(".").length;
   const hostParts = host.split(".");
 
@@ -122,12 +129,10 @@ module.exports = async function resolveTenant(req, res, next) {
       return runWithTenant(null, next);
     }
     if (tenant.status === "suspended") {
-      return res
-        .status(403)
-        .json({
-          success: false,
-          message: "This restaurant is currently suspended",
-        });
+      return res.status(403).json({
+        success: false,
+        message: "This restaurant is currently suspended",
+      });
     }
 
     req.tenant = tenant;
